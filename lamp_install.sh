@@ -43,9 +43,12 @@ APACHE_FILE_INSTALL_LOCATION="/opt/apache2"
 
 function install_libs_for_apache_with_apt {
     # Will need to compile it from source later
+    echo "Updating apt cache"
     sudo apt-get update
-    sudo apt-get install bzip2 gcc make libpcre3 libpcre3-dev -y
+    echo "Installing packages for apache"
+    sudo apt-get install gcc bzip2 make libpcre3 libpcre3-dev -y
     sudo apt-get install libapr1-dev libaprutil1-dev -y
+    echo "Finished installing packages for apache"
 }
 
 function clear_apache_source_code_files {
@@ -82,7 +85,8 @@ function test_if_apache_works {
 }
 
 function install_apache {
-    install_libs_for_apache_with_apt
+    #install_libs_for_apache_with_apt
+    clear_apache_source_code_files
     download_apache_source_code
     extract_apache_source_code
     compile_apache_source_code
@@ -98,7 +102,9 @@ PHP_FILE_INSTALL_LOCATION="/opt/php"
 function install_libs_for_php_with_apt {
     # Will need to compile it from source later
     sudo apt-get update
+    echo "Installing packages for php"
     sudo apt-get install pkg-config libxml2-dev libsqlite3-dev -y
+    echo "Finished installing packages for php"
 }
 
 function clear_php_source_code_files {
@@ -122,7 +128,7 @@ function compile_php_source_code {
 }
 
 function install_php {
-    install_libs_for_php_with_apt
+    #install_libs_for_php_with_apt
     download_php_source_code
     extract_php_source_code
     compile_php_source_code
@@ -153,7 +159,9 @@ MARIADB_FILE_INSTALL_LOCATION="/opt/mariadb"
 
 function install_libs_for_mariadb_with_apt {
     sudo apt-get update
+    echo "Installing packages for mariaDB"
     sudo apt-get install cmake gnutls-dev build-essential libncurses5-dev zlib1g-dev -y
+    echo "Finished installing packages for mariaDB"
 }
 
 function clear_mariadb_source_code_files {
@@ -190,7 +198,7 @@ function compile_mariadb_source_code {
 }
 
 function install_mariadb {
-    install_libs_for_mariadb_with_apt
+    #install_libs_for_mariadb_with_apt
     download_mariadb_source_code
     extract_mariadb_source_code
     compile_mariadb_source_code
@@ -216,15 +224,41 @@ function check_who_is_running {
     echo "##########################################################################"
 }
 
+function install_needed_packages {
+    echo "Installing all needed packages"
+    sudo apt-get update
+    # ORIGINAL
+    # sudo apt-get install bzip2 gcc make libpcre3 libpcre3-dev libapr1-dev libaprutil1-dev pkg-config libxml2-dev libsqlite3-dev cmake gnutls-dev build-essential libncurses5-dev zlib1g-dev cmake gnutls-dev build-essential libncurses5-dev zlib1g-dev -y
+    # NEW
+    sudo apt install bzip2 libapr1-dev libaprutil1-dev gcc libpcre3 libpcre3-dev make libxml2-dev libsqlite3-dev cmake build-essential -y
+    echo "Finished installing"
+}
+
+function remove_installed_packages {
+    echo "Removing all installed packages"
+    sudo apt remove bzip2 gcc make libpcre3 libpcre3-dev libapr1-dev libaprutil1-dev pkg-config libxml2-dev libsqlite3-dev cmake gnutls-dev build-essential libncurses5-dev zlib1g-dev cmake gnutls-dev build-essential libncurses5-dev zlib1g-dev -y
+    echo "Finished removing"
+}
 
 check_if_running_as_root
 clear_opt_dir
-install_apache
-clear_apache_source_code_files
-install_php
+install_needed_packages
+#install_apache
+#clear_apache_source_code_files
+# install_php
+# install_libs_for_apache_with_apt
+# install_libs_for_php_with_apt
+# install_libs_for_mariadb_with_apt
+#install_needed_packages
 install_mariadb
-check_who_is_running
+# remove_installed_packages
+#check_who_is_running
 
+rm /home/hakl8025/UNIX24-TASK2/httpd-2.4.59.tar.bz2
+rm -rf /home/hakl8025/UNIX24-TASK2/httpd-2.4.59
+
+rm /home/hakl8025/UNIX24-TASK2/php-8.3.4.tar.gz
+rm -rf /home/hakl8025/UNIX24-TASK2/php-8.3.4
 
 end=$(date +%s)
 runtime=$((end-start))
