@@ -269,3 +269,4 @@ current_time=$(date +"%T")
 echo "Script ended"
 echo "Current date: $current_date"
 echo "Current time: $current_time"
+

@@ -23,6 +23,7 @@ sudo apt install build-essential -y
 sudo apt install libncurses5-dev -y
 sudo apt install gnutls-dev -y
 sudo apt install pkg-config -y
+sudo apt install zlib1g-dev -y
 echo "Finished installing"
 
 
@@ -45,8 +46,8 @@ echo "Starting apache service"
 
 response=$(curl "http://localhost:80")
 if [[ "$response" == "<html><body><h1>It works!</h1></body></html>" ]]; then
-	echo "Apache is running"
-	IS_APACHE_RUNNING=true
+    echo "Apache is running"
+    IS_APACHE_RUNNING=true
 else
-	echo "Apache is not running"
+    echo "Apache is not running"
 fi

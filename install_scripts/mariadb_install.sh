@@ -22,6 +22,7 @@ sudo apt install build-essential -y
 sudo apt install libncurses5-dev -y
 sudo apt install gnutls-dev -y
 sudo apt install pkg-config -y
+sudo apt install zlib1g-dev -y
 MARIADB_SOURCE_CODE_URL="https://mariadb.mirror.serveriai.lt//mariadb-11.3.2/source/mariadb-11.3.2.tar.gz"
 MARIADB_SOURCE_DIRECTORY_NAME="${MARIADB_SOURCE_CODE_URL##*/}"
 MARIADB_SOURCE_DIRECTORY_NAME_WITHOUT_EXTENSION=$(basename "$MARIADB_SOURCE_DIRECTORY_NAME" .tar.gz) # mariadb-11.3.2
@@ -35,7 +36,7 @@ sudo make install -j "$(nproc)"
 sudo groupadd mysql
 sudo useradd -r -g mysql mysql
 sudo /opt/mariadb/scripts/mysql_install_db --user=mysql --datadir=/opt/mariadb/data
-sudo /opt/mariadb/bin/mariadbd-safe --datadir='/opt/mariadb/data'
+sudo /opt/mariadb/bin/mariadbd-safe --datadir='/opt/mariadb/data' &
 
 end=$(date +%s)
 runtime=$((end-start))

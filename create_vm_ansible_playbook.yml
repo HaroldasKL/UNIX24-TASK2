@@ -1,0 +1,52 @@
+---
+- hosts: localhost
+  become: true
+  vars_files:
+    - vault.yml
+  vars:
+    ansible_become: yes
+    ansible_become_pass: "{{ my_password }}"
+    local_user: "hukl8291"
+    remote_user: "hakl8025"
+  tasks:
+    # - name: Update
+    #   apt: update_cache=yes force_apt_get=yes cache_valid_time=3600
+    # - name: Install packages
+    #   package:
+    #     name: "{{ item }}"
+    #     state: present
+    #   with_items:
+    #     - pip
+    # - name: Install packages with pip
+    #   ansible.builtin.shell: python3 -m pip install oca pyone --break-system-packages
+
+    - name: CreateVM
+      one_vm:
+        api_url: https://grid5.mif.vu.lt/cloud3/RPC2
+        api_username: "{{ mif_username }}"
+        api_password: "{{ mif_password }}"
+        template_name: "Copy of IT Unix 24 debian-12"
+        state: present
+        disk_size: 100 GB
+        memory: 10 GB
+        vcpu: 2
+        cpu: 2
+        attributes:
+          name: "UNIX24-TASK2-TESTING"
+      register: vm_info
+    - name: Sleeping for 1 seconds
+      ansible.builtin.shell: sleep 1
+    # - name: Copy installation scripts
+    #   copy:
+    #     src: "{{ item }}"
+    #     dest: "/home/{{ remote_user }}/"
+    #   delegate_to: "{{ vm_info.instances[0].networks[0].ip }}"
+    #   with_fileglob:
+    #     - "/home/{{ local_user }}/install_scripts/*.sh"
+    - name: Print VM instance ID
+      debug:
+        msg: "VM instance ID is {{ vm_info.instances[0].networks[0].ip }}"
+        # msg: "VM instance ID is {{ vm_info.instances[0].networks[0].ip }}"
+        #msg: "VM instance IP is {{ vm_info.networks }}"
+    - name: Write IP to a file
+      ansible.builtin.shell: echo "{{ vm_info.instances[0].networks[0].ip }}" > ip_address.txt

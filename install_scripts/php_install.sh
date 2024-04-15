@@ -23,6 +23,7 @@ sudo apt install build-essential -y
 sudo apt install libncurses5-dev -y
 sudo apt install gnutls-dev -y
 sudo apt install pkg-config -y
+sudo apt install zlib1g-dev -y
 echo "Finished installing"
 
 PHP_SOURCE_CODE_URL="https://www.php.net/distributions/php-8.3.4.tar.gz"

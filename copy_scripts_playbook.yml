@@ -1,0 +1,25 @@
+---
+- hosts: LAMP_HOST
+  become: true
+  vars_files:
+    - vault.yml
+  vars:
+    ansible_become: yes
+    ansible_become_pass: "123123"
+    local_user: "hukl8291"
+    remote_user: "hakl8025"
+  tasks:
+    - name: Copy installation scripts
+      copy:
+        src: "{{ item }}"
+        dest: "/home/{{ remote_user }}/"
+      with_fileglob:
+        - "/home/{{ local_user }}/install_scripts/*.sh"
+    - name: Give execute permissions on all scripts
+      ansible.builtin.shell: chmod +x *.sh
+    - name: Run apache install
+      ansible.builtin.shell: sudo ./apache_install.sh 2>"apache_err.log" 1>"apache_out.log"
+    - name: Run php install
+      ansible.builtin.shell: sudo ./php_install.sh 2>"php_err.log" 1>"php_out.log"
+    - name: Run mariadb install
+      ansible.builtin.shell: sudo ./mariadb_install.sh 2>"mariadb_err.log" 1>"mariadb_out.log"
