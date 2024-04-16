@@ -17,7 +17,14 @@ HARD DISK SIZE: 100 GB
 CPU: 2
 VCPU: 2
 Script running time:
-102 minutes 52 seconds / 01:42:52
-![alt text](image-1.png)
-Checked everything:
-![alt text](image-2.png)
+103 minutes 37 seconds / 01:43:37
+![alt text](FinalResultImage.png)
+One more check if apache is running:
+![alt text](image-4.png)
+One more check if php is installed:
+![alt text](image-5.png)
+One more check if mariaDB is running:
+![alt text](image-3.png)
+
+Content of /opt/ directory:
+![alt text](image-6.png)
