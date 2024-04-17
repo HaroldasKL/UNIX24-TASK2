@@ -1,15 +1,17 @@
 #!/bin/bash
 
 # CONSTANTS
+#------------------------
 APR_VERSION="1.7.4"
 EXPAT_VERSION="2.6.2"
 APR_UTIL_VERSION="1.6.3"
 APACHE_VERSION="2.4.59"
+PHP_VERSION="8.3.4"
+MARIADB_VERSION="11.3.2"
 PACKAGES_INSTALLATION_DIRECTORY="/opt"
-# NUMBER_OF_PROCESSING_UNITS=$(nproc)
-NUMBER_OF_PROCESSING_UNITS=50
-
-
+NUMBER_OF_PROCESSING_UNITS=$(nproc)
+#------------------------
+# END OF CONSTANTS
 
 
 
@@ -49,7 +51,6 @@ function install_needed_packages {
     echo "Finished installing"
 }
 
-
 function install_apr {
     APR_SOURCE_CODE_URL="https://dlcdn.apache.org/apr/apr-${APR_VERSION}.tar.bz2"
     APR_SOURCE_DIRECTORY_NAME="${APR_SOURCE_CODE_URL##*/}" # apr-${APR_VERSION}.tar.bz2
@@ -65,7 +66,10 @@ function install_apr {
     sudo ./configure --prefix="$APR_FILE_INSTALL_LOCATION"
     sudo make -j "$NUMBER_OF_PROCESSING_UNITS"
     sudo make install -j "$NUMBER_OF_PROCESSING_UNITS"
+    cd ..
 }
+
+
 
 
  # EXPAT IS NEEDED FOR APR-UTIL
@@ -84,6 +88,7 @@ function install_expat {
     sudo ./configure --prefix="$EXPAT_FILE_INSTALL_LOCATION"
     sudo make -j "$NUMBER_OF_PROCESSING_UNITS"
     sudo make install -j "$NUMBER_OF_PROCESSING_UNITS"
+    cd ..
 }
 
 function install_apr_util {
@@ -100,10 +105,8 @@ function install_apr_util {
     sudo ./configure --prefix="$APR_UTIL_FILE_INSTALL_LOCATION" --with-apr="$APR_FILE_INSTALL_LOCATION" --with-expat="$EXPAT_FILE_INSTALL_LOCATION"
     sudo make -j "$NUMBER_OF_PROCESSING_UNITS"
     sudo make install -j "$NUMBER_OF_PROCESSING_UNITS"
+    cd ..
 }
-
-
-
 
 function install_apache {
     APACHE_SOURCE_CODE_URL="https://dlcdn.apache.org/httpd/httpd-${APACHE_VERSION}.tar.bz2"
@@ -120,8 +123,8 @@ function install_apache {
     sudo make install -j "$NUMBER_OF_PROCESSING_UNITS"
     echo "Starting apache service"
     sudo "$APACHE_FILE_INSTALL_LOCATION"/bin/apachectl start
+    cd ..
 }
-
 
 function check_if_apache_is_running {
     response=$(curl "http://localhost:80")
@@ -132,12 +135,11 @@ function check_if_apache_is_running {
     fi
 }
 
-
 function install_php {
-    PHP_SOURCE_CODE_URL="https://www.php.net/distributions/php-8.3.4.tar.gz"
+    PHP_SOURCE_CODE_URL="https://www.php.net/distributions/php-${PHP_VERSION}.tar.gz"
     PHP_SOURCE_DIRECTORY_NAME="${PHP_SOURCE_CODE_URL##*/}"
-    PHP_SOURCE_DIRECTORY_NAME_WITHOUT_EXTENSION=$(basename "$PHP_SOURCE_DIRECTORY_NAME" .tar.gz) # php-8.3.4
-    PHP_FILE_INSTALL_LOCATION="/opt/php"
+    PHP_SOURCE_DIRECTORY_NAME_WITHOUT_EXTENSION=$(basename "$PHP_SOURCE_DIRECTORY_NAME" .tar.gz)
+    PHP_FILE_INSTALL_LOCATION="${PACKAGES_INSTALLATION_DIRECTORY}/php-${PHP_VERSION}"
     
     curl -O "$PHP_SOURCE_CODE_URL"
     
@@ -148,11 +150,12 @@ function install_php {
     sudo ./configure --prefix="$PHP_FILE_INSTALL_LOCATION"
     sudo make -j "$NUMBER_OF_PROCESSING_UNITS"
     sudo make install -j "$NUMBER_OF_PROCESSING_UNITS"
+    cd ..
 }
 
 function check_if_php_is_installed {
-    response=$(which /opt/php/bin/php)
-    if [[ "$response" == "/opt/php/bin/php" ]]; then
+    response=$(which ${PHP_FILE_INSTALL_LOCATION}/bin/php)
+    if [[ "$response" == "${PHP_FILE_INSTALL_LOCATION}/bin/php" ]]; then
         echo "Php found"
     else
         echo "Php not found"
@@ -160,10 +163,10 @@ function check_if_php_is_installed {
 }
 
 function install_mariadb {
-    MARIADB_SOURCE_CODE_URL="https://mariadb.mirror.serveriai.lt//mariadb-11.3.2/source/mariadb-11.3.2.tar.gz"
+    MARIADB_SOURCE_CODE_URL="https://mariadb.mirror.serveriai.lt/mariadb-${MARIADB_VERSION}/source/mariadb-${MARIADB_VERSION}.tar.gz"
     MARIADB_SOURCE_DIRECTORY_NAME="${MARIADB_SOURCE_CODE_URL##*/}"
-    MARIADB_SOURCE_DIRECTORY_NAME_WITHOUT_EXTENSION=$(basename "$MARIADB_SOURCE_DIRECTORY_NAME" .tar.gz) # mariadb-11.3.2
-    MARIADB_FILE_INSTALL_LOCATION="/opt/mariadb"
+    MARIADB_SOURCE_DIRECTORY_NAME_WITHOUT_EXTENSION=$(basename "$MARIADB_SOURCE_DIRECTORY_NAME" .tar.gz)
+    MARIADB_FILE_INSTALL_LOCATION="${PACKAGES_INSTALLATION_DIRECTORY}/mariadb-${MARIADB_VERSION}"
     curl -O "$MARIADB_SOURCE_CODE_URL"
     tar xvf "$MARIADB_SOURCE_DIRECTORY_NAME"
     cd "./$MARIADB_SOURCE_DIRECTORY_NAME_WITHOUT_EXTENSION" || exit
@@ -175,7 +178,7 @@ function install_mariadb {
     sudo groupadd mysql
     sudo useradd -r -g mysql mysql
     
-    sudo /opt/mariadb/scripts/mysql_install_db --user=mysql --datadir=/opt/mariadb/data
+    sudo ${MARIADB_FILE_INSTALL_LOCATION}/scripts/mysql_install_db --user=mysql --datadir=${MARIADB_FILE_INSTALL_LOCATION}/data
     
     echo "[mysqld]" > /etc/my.cnf
     echo "pid-file=/var/run/mysqld/mysqld.pid" >> /etc/my.cnf
@@ -183,12 +186,13 @@ function install_mariadb {
     sudo mkdir /var/run/mysqld
     sudo touch /var/run/mysqld/mysqld.pid
     sudo chown -R mysql:mysql /var/run/mysqld
-    sudo /opt/mariadb/support-files/mysql.server start --user=mysql
+    sudo ${MARIADB_FILE_INSTALL_LOCATION}/support-files/mysql.server start --user=mysql
+    cd ..
 }
 
 function check_if_mariadb_is_installed {
-    response=$(which /opt/mariadb/bin/mariadb)
-    if [[ "$response" == "/opt/mariadb/bin/mariadb" ]]; then
+    response=$(which ${MARIADB_FILE_INSTALL_LOCATION}/bin/mariadb)
+    if [[ "$response" == "${MARIADB_FILE_INSTALL_LOCATION}/bin/mariadb" ]]; then
         echo "Mariadb found"
     else
         echo "Mariadb not found"
@@ -202,8 +206,8 @@ install_apr
 install_expat
 install_apr_util
 install_apache
-# install_php
-# install_mariadb
+install_php
+install_mariadb
 
 check_if_apache_is_running
 check_if_php_is_installed
