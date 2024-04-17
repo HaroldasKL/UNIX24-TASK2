@@ -1,5 +1,23 @@
 #!/bin/bash
 
+# CONSTANTS
+APR_VERSION="1.7.4"
+EXPAT_VERSION="2.6.2"
+APR_UTIL_VERSION="1.6.3"
+APACHE_VERSION="2.4.59"
+PACKAGES_INSTALLATION_DIRECTORY="/opt"
+# NUMBER_OF_PROCESSING_UNITS=$(nproc)
+NUMBER_OF_PROCESSING_UNITS=50
+
+
+
+
+
+
+
+
+
+
 start=$(date +%s)
 current_date=$(date +"%Y-%m-%d")
 current_time=$(date +"%T")
@@ -7,53 +25,57 @@ echo "Script started"
 echo "Current date: $current_date"
 echo "Current time: $current_time"
 
-echo "Installing needed packages"
-sudo apt-get update
-sudo apt install bzip2 -y
-# sudo apt install libexpat1-dev -y     # INSTALLED FROM SOURCE (EXPAT needed for APR-UTIL)
-# sudo apt install libapr1-dev -y       # INSTALLED FROM SOURCE (APR)
-# sudo apt install libaprutil1-dev -y   # INSTALLED FROM SOURCE (APR_UTIL)
-sudo apt install gcc -y
-sudo apt install g++ -y
-sudo apt install libpcre3 -y
-sudo apt install libpcre3-dev -y
-sudo apt install make -y
-sudo apt install libxml2-dev -y
-sudo apt install libsqlite3-dev -y
-sudo apt install cmake -y
-sudo apt install build-essential -y
-sudo apt install libncurses5-dev -y
-sudo apt install gnutls-dev -y
-sudo apt install pkg-config -y
-sudo apt install zlib1g-dev -y
-echo "Finished installing"
+
+function install_needed_packages {
+    echo "Installing needed packages"
+    sudo apt-get update
+    sudo apt install bzip2 -y
+    # sudo apt install libexpat1-dev -y     # INSTALLED FROM SOURCE (EXPAT needed for APR-UTIL)
+    # sudo apt install libapr1-dev -y       # INSTALLED FROM SOURCE (APR)
+    # sudo apt install libaprutil1-dev -y   # INSTALLED FROM SOURCE (APR_UTIL)
+    sudo apt install gcc -y
+    sudo apt install g++ -y
+    sudo apt install libpcre3 -y
+    sudo apt install libpcre3-dev -y
+    sudo apt install make -y
+    sudo apt install libxml2-dev -y
+    sudo apt install libsqlite3-dev -y
+    sudo apt install cmake -y
+    sudo apt install build-essential -y
+    sudo apt install libncurses5-dev -y
+    sudo apt install gnutls-dev -y
+    sudo apt install pkg-config -y
+    sudo apt install zlib1g-dev -y
+    echo "Finished installing"
+}
 
 
-NUMBER_OF_PROCESSING_UNITS=$(nproc) # nproc - print the number of processing units available
-
-APR_SOURCE_CODE_URL="https://dlcdn.apache.org//apr/apr-1.7.4.tar.bz2"
-APR_SOURCE_DIRECTORY_NAME="${APR_SOURCE_CODE_URL##*/}" # apr-1.7.4.tar.bz2
-APR_SOURCE_DIRECTORY_NAME_WITHOUT_EXTENSION=$(basename "$APR_SOURCE_DIRECTORY_NAME" .tar.bz2) # apr-1.4.0
-APR_FILE_INSTALL_LOCATION="/opt/apr"
 function install_apr {
-    
+    APR_SOURCE_CODE_URL="https://dlcdn.apache.org/apr/apr-${APR_VERSION}.tar.bz2"
+    APR_SOURCE_DIRECTORY_NAME="${APR_SOURCE_CODE_URL##*/}" # apr-${APR_VERSION}.tar.bz2
+    APR_SOURCE_DIRECTORY_NAME_WITHOUT_EXTENSION=$(basename "$APR_SOURCE_DIRECTORY_NAME" .tar.bz2) # apr-${APR_VERSION}
+    APR_FILE_INSTALL_LOCATION="${PACKAGES_INSTALLATION_DIRECTORY}/apr-${APR_VERSION}"
+
     curl -O "$APR_SOURCE_CODE_URL"
     
     tar xvf "$APR_SOURCE_DIRECTORY_NAME"
     
     cd "./$APR_SOURCE_DIRECTORY_NAME_WITHOUT_EXTENSION" || exit
+
     sudo ./configure --prefix="$APR_FILE_INSTALL_LOCATION"
     sudo make -j "$NUMBER_OF_PROCESSING_UNITS"
     sudo make install -j "$NUMBER_OF_PROCESSING_UNITS"
 }
 
-# EXPAT IS NEEDED FOR APR-UTIL
-EXPAT_SOURCE_CODE_URL="https://github.com/libexpat/libexpat/releases/download/R_2_6_2/expat-2.6.2.tar.bz2"
-EXPAT_SOURCE_DIRECTORY_NAME="${EXPAT_SOURCE_CODE_URL##*/}" # apr-util-1.6.3.tar.bz2
-EXPAT_SOURCE_DIRECTORY_NAME_WITHOUT_EXTENSION=$(basename "$EXPAT_SOURCE_DIRECTORY_NAME" .tar.bz2) # apr-util-1.6.3
-EXPAT_FILE_INSTALL_LOCATION="/opt/expat"
+
+ # EXPAT IS NEEDED FOR APR-UTIL
 function install_expat {
-    
+    EXPAT_VERSION_DOTS_REPLACED_WITH_UNDERSCORES=${EXPAT_VERSION//./_} # Replace dots with underscores
+    EXPAT_SOURCE_CODE_URL="https://github.com/libexpat/libexpat/releases/download/R_${EXPAT_VERSION_DOTS_REPLACED_WITH_UNDERSCORES}/expat-${EXPAT_VERSION}.tar.bz2"
+    EXPAT_SOURCE_DIRECTORY_NAME="${EXPAT_SOURCE_CODE_URL##*/}"
+    EXPAT_SOURCE_DIRECTORY_NAME_WITHOUT_EXTENSION=$(basename "$EXPAT_SOURCE_DIRECTORY_NAME" .tar.bz2)
+    EXPAT_FILE_INSTALL_LOCATION="${PACKAGES_INSTALLATION_DIRECTORY}/expat-${EXPAT_VERSION}"
+
     wget "$EXPAT_SOURCE_CODE_URL"
     
     tar xvf "$EXPAT_SOURCE_DIRECTORY_NAME"
@@ -64,14 +86,11 @@ function install_expat {
     sudo make install -j "$NUMBER_OF_PROCESSING_UNITS"
 }
 
-
-
-APR_UTIL_SOURCE_CODE_URL="https://dlcdn.apache.org//apr/apr-util-1.6.3.tar.bz2"
-APR_UTIL_SOURCE_DIRECTORY_NAME="${APR_UTIL_SOURCE_CODE_URL##*/}" # apr-util-1.6.3.tar.bz2
-APR_UTIL_SOURCE_DIRECTORY_NAME_WITHOUT_EXTENSION=$(basename "$APR_UTIL_SOURCE_DIRECTORY_NAME" .tar.bz2) # apr-util-1.6.3
-APR_UTIL_FILE_INSTALL_LOCATION="/opt/apr_utils"
 function install_apr_util {
-    
+    APR_UTIL_SOURCE_CODE_URL="https://dlcdn.apache.org/apr/apr-util-${APR_UTIL_VERSION}.tar.bz2"
+    APR_UTIL_SOURCE_DIRECTORY_NAME="${APR_UTIL_SOURCE_CODE_URL##*/}"
+    APR_UTIL_SOURCE_DIRECTORY_NAME_WITHOUT_EXTENSION=$(basename "$APR_UTIL_SOURCE_DIRECTORY_NAME" .tar.bz2)
+    APR_UTIL_FILE_INSTALL_LOCATION="${PACKAGES_INSTALLATION_DIRECTORY}/apr_util-${APR_UTIL_VERSION}"
     
     curl -O "$APR_UTIL_SOURCE_CODE_URL"
     
@@ -87,10 +106,10 @@ function install_apr_util {
 
 
 function install_apache {
-    APACHE_SOURCE_CODE_URL="https://dlcdn.apache.org/httpd/httpd-2.4.59.tar.bz2"
-    APACHE_SOURCE_DIRECTORY_NAME="${APACHE_SOURCE_CODE_URL##*/}" # httpd-2.4.59.tar.bz2
-    APACHE_SOURCE_DIRECTORY_NAME_WITHOUT_EXTENSION=$(basename "$APACHE_SOURCE_DIRECTORY_NAME" .tar.bz2) # httpd-2.4.59
-    APACHE_FILE_INSTALL_LOCATION="/opt/apache2"
+    APACHE_SOURCE_CODE_URL="https://dlcdn.apache.org/httpd/httpd-${APACHE_VERSION}.tar.bz2"
+    APACHE_SOURCE_DIRECTORY_NAME="${APACHE_SOURCE_CODE_URL##*/}"
+    APACHE_SOURCE_DIRECTORY_NAME_WITHOUT_EXTENSION=$(basename "$APACHE_SOURCE_DIRECTORY_NAME" .tar.bz2)
+    APACHE_FILE_INSTALL_LOCATION="${PACKAGES_INSTALLATION_DIRECTORY}/apache-${APACHE_VERSION}"
     curl -O "$APACHE_SOURCE_CODE_URL"
     
     tar xvf "$APACHE_SOURCE_DIRECTORY_NAME"
@@ -176,12 +195,15 @@ function check_if_mariadb_is_installed {
     fi
 }
 
+# Install needed packages
+install_needed_packages
+
 install_apr
 install_expat
 install_apr_util
 install_apache
-install_php
-install_mariadb
+# install_php
+# install_mariadb
 
 check_if_apache_is_running
 check_if_php_is_installed
