@@ -66,8 +66,9 @@ function install_apr {
     sudo make -j "$NUMBER_OF_PROCESSING_UNITS"
     sudo make install -j "$NUMBER_OF_PROCESSING_UNITS"
     cd ..
-    sudo rm "${APR_SOURCE_DIRECTORY_NAME}"
-    sudo rm -r "${APR_SOURCE_DIRECTORY_NAME_WITHOUT_EXTENSION}"
+    
+    #sudo rm "${APR_SOURCE_DIRECTORY_NAME}"
+    #sudo rm -r "${APR_SOURCE_DIRECTORY_NAME_WITHOUT_EXTENSION}"
 }
 
 
@@ -89,8 +90,8 @@ function install_expat {
     sudo make install -j "$NUMBER_OF_PROCESSING_UNITS"
     cd ..
     
-    sudo rm "${EXPAT_SOURCE_DIRECTORY_NAME}"
-    sudo rm -r "${EXPAT_SOURCE_DIRECTORY_NAME_WITHOUT_EXTENSION}"
+    #sudo rm "${EXPAT_SOURCE_DIRECTORY_NAME}"
+    #sudo rm -r "${EXPAT_SOURCE_DIRECTORY_NAME_WITHOUT_EXTENSION}"
 }
 
 function install_apr_util {
@@ -108,8 +109,9 @@ function install_apr_util {
     sudo make -j "$NUMBER_OF_PROCESSING_UNITS"
     sudo make install -j "$NUMBER_OF_PROCESSING_UNITS"
     cd ..
-    sudo rm "${APR_UTIL_SOURCE_DIRECTORY_NAME}"
-    sudo rm -r "${APR_UTIL_SOURCE_DIRECTORY_NAME_WITHOUT_EXTENSION}"
+    
+    # sudo rm "${APR_UTIL_SOURCE_DIRECTORY_NAME}"
+    # sudo rm -r "${APR_UTIL_SOURCE_DIRECTORY_NAME_WITHOUT_EXTENSION}"
 }
 
 function install_apache {
@@ -123,15 +125,23 @@ function install_apache {
     tar xvf "$APACHE_SOURCE_DIRECTORY_NAME"
     
     cd "./$APACHE_SOURCE_DIRECTORY_NAME_WITHOUT_EXTENSION" || exit
-    ./configure --prefix="$APACHE_FILE_INSTALL_LOCATION" --with-apr="$APR_FILE_INSTALL_LOCATION" --with-apr-util="$APR_UTIL_FILE_INSTALL_LOCATION"
+    ./configure --prefix="$APACHE_FILE_INSTALL_LOCATION" --with-apr="$APR_FILE_INSTALL_LOCATION" --with-apr-util="$APR_UTIL_FILE_INSTALL_LOCATION" --enable-so
     sudo make -j "$NUMBER_OF_PROCESSING_UNITS"
     sudo make install -j "$NUMBER_OF_PROCESSING_UNITS"
     echo "Starting apache service"
-    sudo "$APACHE_FILE_INSTALL_LOCATION"/bin/apachectl start
+    sudo "${APACHE_FILE_INSTALL_LOCATION}"/bin/apachectl start
+    
+    response=$(curl "http://localhost:80")
+    if [[ "$response" == "<html><body><h1>It works!</h1></body></html>" ]]; then
+        echo "Apache is running"
+    else
+        echo "Apache is not running"
+    fi
+    sudo "$APACHE_FILE_INSTALL_LOCATION"/bin/apachectl stop
     cd ..
     
-    sudo rm "${APACHE_SOURCE_DIRECTORY_NAME}"
-    sudo rm -r "${APACHE_SOURCE_DIRECTORY_NAME_WITHOUT_EXTENSION}"
+    # sudo rm "${APACHE_SOURCE_DIRECTORY_NAME}"
+    # sudo rm -r "${APACHE_SOURCE_DIRECTORY_NAME_WITHOUT_EXTENSION}"
 }
 
 function check_if_apache_is_running {
@@ -155,13 +165,14 @@ function install_php {
     
     cd "./$PHP_SOURCE_DIRECTORY_NAME_WITHOUT_EXTENSION" || exit
     
-    sudo ./configure --prefix="$PHP_FILE_INSTALL_LOCATION"
+    sudo ./configure --prefix="$PHP_FILE_INSTALL_LOCATION" --with-apxs2="${APACHE_FILE_INSTALL_LOCATION}"/bin/apxs
     sudo make -j "$NUMBER_OF_PROCESSING_UNITS"
     sudo make install -j "$NUMBER_OF_PROCESSING_UNITS"
+    sudo cp php.ini-development ${PHP_FILE_INSTALL_LOCATION}/lib/php.ini
     cd ..
     
-    sudo rm "${PHP_SOURCE_DIRECTORY_NAME}"
-    sudo rm -r "${PHP_SOURCE_DIRECTORY_NAME_WITHOUT_EXTENSION}"
+    # sudo rm "${PHP_SOURCE_DIRECTORY_NAME}"
+    # sudo rm -r "${PHP_SOURCE_DIRECTORY_NAME_WITHOUT_EXTENSION}"
 }
 
 function check_if_php_is_installed {
@@ -203,8 +214,8 @@ function install_mariadb {
     sudo ${MARIADB_FILE_INSTALL_LOCATION}/support-files/mysql.server start --user=mysql
     cd ..
     
-    sudo rm "${MARIADB_SOURCE_DIRECTORY_NAME}"
-    sudo rm -r "${MARIADB_SOURCE_DIRECTORY_NAME_WITHOUT_EXTENSION}"
+    # sudo rm "${MARIADB_SOURCE_DIRECTORY_NAME}"
+    # sudo rm -r "${MARIADB_SOURCE_DIRECTORY_NAME_WITHOUT_EXTENSION}"
 }
 
 function check_if_mariadb_is_installed {
@@ -216,6 +227,26 @@ function check_if_mariadb_is_installed {
     fi
 }
 
+function delete_source_code_files {
+    sudo rm "${APR_SOURCE_DIRECTORY_NAME}"
+    sudo rm -r "${APR_SOURCE_DIRECTORY_NAME_WITHOUT_EXTENSION}"
+    
+    sudo rm "${EXPAT_SOURCE_DIRECTORY_NAME}"
+    sudo rm -r "${EXPAT_SOURCE_DIRECTORY_NAME_WITHOUT_EXTENSION}"
+    
+    sudo rm "${APR_UTIL_SOURCE_DIRECTORY_NAME}"
+    sudo rm -r "${APR_UTIL_SOURCE_DIRECTORY_NAME_WITHOUT_EXTENSION}"
+    
+    sudo rm "${APACHE_SOURCE_DIRECTORY_NAME}"
+    sudo rm -r "${APACHE_SOURCE_DIRECTORY_NAME_WITHOUT_EXTENSION}"
+    
+    sudo rm "${PHP_SOURCE_DIRECTORY_NAME}"
+    sudo rm -r "${PHP_SOURCE_DIRECTORY_NAME_WITHOUT_EXTENSION}"
+    
+    sudo rm "${MARIADB_SOURCE_DIRECTORY_NAME}"
+    sudo rm -r "${MARIADB_SOURCE_DIRECTORY_NAME_WITHOUT_EXTENSION}"
+}
+
 # Install needed packages
 install_needed_packages
 
@@ -224,11 +255,11 @@ install_expat
 install_apr_util
 install_apache
 install_php
-install_mariadb
+#install_mariadb
 
 check_if_apache_is_running
 check_if_php_is_installed
-check_if_mariadb_is_installed
+#check_if_mariadb_is_installed
 
 end=$(date +%s)
 runtime=$((end-start))
