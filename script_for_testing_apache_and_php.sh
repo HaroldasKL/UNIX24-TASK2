@@ -128,9 +128,10 @@ function install_apache {
     ./configure --prefix="$APACHE_FILE_INSTALL_LOCATION" --with-apr="$APR_FILE_INSTALL_LOCATION" --with-apr-util="$APR_UTIL_FILE_INSTALL_LOCATION" --enable-so
     sudo make -j "$NUMBER_OF_PROCESSING_UNITS"
     sudo make install -j "$NUMBER_OF_PROCESSING_UNITS"
-    #echo "Starting apache service"
-    #sudo "${APACHE_FILE_INSTALL_LOCATION}"/bin/apachectl start
-    
+    echo "Starting apache service"
+    sudo "${APACHE_FILE_INSTALL_LOCATION}"/bin/apachectl -k start
+    echo "Stopping apache service"
+    sudo "${APACHE_FILE_INSTALL_LOCATION}"/bin/apachectl -k stop
     # response=$(curl "http://localhost:80")
     # if [[ "$response" == "<html><body><h1>It works!</h1></body></html>" ]]; then
     #     echo "Apache is running"
@@ -146,8 +147,7 @@ function install_apache {
     
     sudo echo "echo \"<?php phpinfo();?>\"" > "${APACHE_FILE_INSTALL_LOCATION}/htdocs/index.php"
     
-    echo "Starting apache service"
-    sudo "${APACHE_FILE_INSTALL_LOCATION}"/bin/apachectl -k restart
+    #sudo "${APACHE_FILE_INSTALL_LOCATION}"/bin/apachectl -k restart
     
     
     # sudo rm "${APACHE_SOURCE_DIRECTORY_NAME}"
@@ -190,7 +190,8 @@ function install_php {
     sudo cp php.ini-development ${PHP_FILE_INSTALL_LOCATION}/lib/php.ini
     cd ..
     
-    
+    echo "Starting apache service"
+    sudo "${APACHE_FILE_INSTALL_LOCATION}"/bin/apachectl -k start
     # sudo rm "${PHP_SOURCE_DIRECTORY_NAME}"
     # sudo rm -r "${PHP_SOURCE_DIRECTORY_NAME_WITHOUT_EXTENSION}"
 }
