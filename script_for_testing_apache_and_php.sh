@@ -128,17 +128,27 @@ function install_apache {
     ./configure --prefix="$APACHE_FILE_INSTALL_LOCATION" --with-apr="$APR_FILE_INSTALL_LOCATION" --with-apr-util="$APR_UTIL_FILE_INSTALL_LOCATION" --enable-so
     sudo make -j "$NUMBER_OF_PROCESSING_UNITS"
     sudo make install -j "$NUMBER_OF_PROCESSING_UNITS"
-    echo "Starting apache service"
-    sudo "${APACHE_FILE_INSTALL_LOCATION}"/bin/apachectl start
+    #echo "Starting apache service"
+    #sudo "${APACHE_FILE_INSTALL_LOCATION}"/bin/apachectl start
     
-    response=$(curl "http://localhost:80")
-    if [[ "$response" == "<html><body><h1>It works!</h1></body></html>" ]]; then
-        echo "Apache is running"
-    else
-        echo "Apache is not running"
-    fi
-    sudo "$APACHE_FILE_INSTALL_LOCATION"/bin/apachectl stop
-    cd ..
+    # response=$(curl "http://localhost:80")
+    # if [[ "$response" == "<html><body><h1>It works!</h1></body></html>" ]]; then
+    #     echo "Apache is running"
+    # else
+    #     echo "Apache is not running"
+    # fi
+    # sudo "$APACHE_FILE_INSTALL_LOCATION"/bin/apachectl stop
+    # cd ..
+    
+    sudo echo "<FilesMatch \.php$>" >> "${APACHE_FILE_INSTALL_LOCATION}/conf/httpd.conf"
+    sudo echo "    SetHandler application/x-httpd-php" >> "${APACHE_FILE_INSTALL_LOCATION}/conf/httpd.conf"
+    sudo echo "</FilesMatch>" >> "${APACHE_FILE_INSTALL_LOCATION}/conf/httpd.conf"
+    
+    sudo echo "echo \"<?php phpinfo();?>\"" > "${APACHE_FILE_INSTALL_LOCATION}/htdocs/index.php"
+    
+    echo "Starting apache service"
+    sudo "${APACHE_FILE_INSTALL_LOCATION}"/bin/apachectl -k restart
+    
     
     # sudo rm "${APACHE_SOURCE_DIRECTORY_NAME}"
     # sudo rm -r "${APACHE_SOURCE_DIRECTORY_NAME_WITHOUT_EXTENSION}"
@@ -150,6 +160,15 @@ function check_if_apache_is_running {
         echo "Apache is running"
     else
         echo "Apache is not running"
+    fi
+    
+    curl -s -I http://localhost/index.php | grep "Server:" | sudo tee output.txt
+    sudo cat output.txt | tr -d '\r' > cleaned_output.txt
+    response=$(< cleaned_output.txt)
+    if [[ "$response" == "Server: Apache/${APACHE_VERSION} (Unix) PHP/${PHP_VERSION}" ]]; then
+        echo "Apache is successfully configured with PHP!"
+    else
+        echo "Error configuring Apache with PHP!"
     fi
 }
 
@@ -170,6 +189,7 @@ function install_php {
     sudo make install -j "$NUMBER_OF_PROCESSING_UNITS"
     sudo cp php.ini-development ${PHP_FILE_INSTALL_LOCATION}/lib/php.ini
     cd ..
+    
     
     # sudo rm "${PHP_SOURCE_DIRECTORY_NAME}"
     # sudo rm -r "${PHP_SOURCE_DIRECTORY_NAME_WITHOUT_EXTENSION}"
