@@ -52,28 +52,30 @@ function install_apr {
     APR_SOURCE_DIRECTORY_NAME="${APR_SOURCE_CODE_URL##*/}" # apr-${APR_VERSION}.tar.bz2
     APR_SOURCE_DIRECTORY_NAME_WITHOUT_EXTENSION=$(basename "$APR_SOURCE_DIRECTORY_NAME" .tar.bz2) # apr-${APR_VERSION}
     APR_FILE_INSTALL_LOCATION="${PACKAGES_INSTALLATION_DIRECTORY}/apr-${APR_VERSION}"
-
-    curl -O "$APR_SOURCE_CODE_URL"
+    
+    curl -A "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36 OPR/108.0.0.0" -O "$APR_SOURCE_CODE_URL"
     
     tar xvf "$APR_SOURCE_DIRECTORY_NAME"
     
     cd "./$APR_SOURCE_DIRECTORY_NAME_WITHOUT_EXTENSION" || exit
-
+    
     sudo ./configure --prefix="$APR_FILE_INSTALL_LOCATION"
     sudo make -j "$NUMBER_OF_PROCESSING_UNITS"
     sudo make install -j "$NUMBER_OF_PROCESSING_UNITS"
     cd ..
+    sudo rm "${APR_SOURCE_DIRECTORY_NAME}"
+    sudo rm -r "${APR_SOURCE_DIRECTORY_NAME_WITHOUT_EXTENSION}"
 }
 
 
- # EXPAT IS NEEDED FOR APR-UTIL
+# EXPAT IS NEEDED FOR APR-UTIL
 function install_expat {
     EXPAT_VERSION_DOTS_REPLACED_WITH_UNDERSCORES=${EXPAT_VERSION//./_} # Replace dots with underscores
     EXPAT_SOURCE_CODE_URL="https://github.com/libexpat/libexpat/releases/download/R_${EXPAT_VERSION_DOTS_REPLACED_WITH_UNDERSCORES}/expat-${EXPAT_VERSION}.tar.bz2"
     EXPAT_SOURCE_DIRECTORY_NAME="${EXPAT_SOURCE_CODE_URL##*/}"
     EXPAT_SOURCE_DIRECTORY_NAME_WITHOUT_EXTENSION=$(basename "$EXPAT_SOURCE_DIRECTORY_NAME" .tar.bz2)
     EXPAT_FILE_INSTALL_LOCATION="${PACKAGES_INSTALLATION_DIRECTORY}/expat-${EXPAT_VERSION}"
-
+    
     wget "$EXPAT_SOURCE_CODE_URL"
     
     tar xvf "$EXPAT_SOURCE_DIRECTORY_NAME"
@@ -83,6 +85,9 @@ function install_expat {
     sudo make -j "$NUMBER_OF_PROCESSING_UNITS"
     sudo make install -j "$NUMBER_OF_PROCESSING_UNITS"
     cd ..
+    
+    sudo rm "${EXPAT_SOURCE_DIRECTORY_NAME}"
+    sudo rm -r "${EXPAT_SOURCE_DIRECTORY_NAME_WITHOUT_EXTENSION}"
 }
 
 function install_apr_util {
@@ -100,6 +105,8 @@ function install_apr_util {
     sudo make -j "$NUMBER_OF_PROCESSING_UNITS"
     sudo make install -j "$NUMBER_OF_PROCESSING_UNITS"
     cd ..
+    sudo rm "${APR_UTIL_SOURCE_DIRECTORY_NAME}"
+    sudo rm -r "${APR_UTIL_SOURCE_DIRECTORY_NAME_WITHOUT_EXTENSION}"
 }
 
 function install_apache {
@@ -118,6 +125,9 @@ function install_apache {
     echo "Starting apache service"
     sudo "$APACHE_FILE_INSTALL_LOCATION"/bin/apachectl start
     cd ..
+    
+    sudo rm "${APACHE_SOURCE_DIRECTORY_NAME}"
+    sudo rm -r "${APACHE_SOURCE_DIRECTORY_NAME_WITHOUT_EXTENSION}"
 }
 
 function check_if_apache_is_running {
@@ -145,6 +155,9 @@ function install_php {
     sudo make -j "$NUMBER_OF_PROCESSING_UNITS"
     sudo make install -j "$NUMBER_OF_PROCESSING_UNITS"
     cd ..
+    
+    sudo rm "${PHP_SOURCE_DIRECTORY_NAME}"
+    sudo rm -r "${PHP_SOURCE_DIRECTORY_NAME_WITHOUT_EXTENSION}"
 }
 
 function check_if_php_is_installed {
@@ -182,6 +195,9 @@ function install_mariadb {
     sudo chown -R mysql:mysql /var/run/mysqld
     sudo ${MARIADB_FILE_INSTALL_LOCATION}/support-files/mysql.server start --user=mysql
     cd ..
+    
+    sudo rm "${MARIADB_SOURCE_DIRECTORY_NAME}"
+    sudo rm -r "${MARIADB_SOURCE_DIRECTORY_NAME_WITHOUT_EXTENSION}"
 }
 
 function check_if_mariadb_is_installed {
