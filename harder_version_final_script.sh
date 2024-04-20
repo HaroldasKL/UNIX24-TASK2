@@ -16,10 +16,6 @@ NUMBER_OF_PROCESSING_UNITS=$(nproc)
 
 
 
-
-
-
-
 start=$(date +%s)
 current_date=$(date +"%Y-%m-%d")
 current_time=$(date +"%T")
@@ -68,8 +64,6 @@ function install_apr {
     sudo make install -j "$NUMBER_OF_PROCESSING_UNITS"
     cd ..
 }
-
-
 
 
  # EXPAT IS NEEDED FOR APR-UTIL
