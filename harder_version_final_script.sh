@@ -41,6 +41,7 @@ function install_needed_packages {
     sudo apt install make -y
     sudo apt install libxml2-dev -y
     sudo apt install libsqlite3-dev -y
+    sudo apt install jq -y
     sudo apt install cmake -y
     sudo apt install build-essential -y
     sudo apt install libncurses5-dev -y

@@ -11,12 +11,15 @@ MARIADB_VERSION="11.3.2"
 
 USER_AGENT="Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36 OPR/108.0.0.0"
 
+TAR_BZ2_EXTENSION=".tar.bz2"
+SHA256_EXTENSION=".sha256"
+TAR_GZ_EXTENSION=".tar.gz"
+
+
 PACKAGES_INSTALLATION_DIRECTORY="/opt"
 NUMBER_OF_PROCESSING_UNITS=$(nproc)
 #------------------------
 # END OF CONSTANTS
-
-
 
 
 start=$(date +%s)
@@ -29,7 +32,7 @@ echo "Current time: $current_time"
 
 function install_needed_packages {
     echo "Installing needed packages"
-    sudo apt-get update
+    sudo apt update
     sudo apt install bzip2 -y
     # sudo apt install libexpat1-dev -y     # INSTALLED FROM SOURCE (EXPAT needed for APR-UTIL)
     # sudo apt install libapr1-dev -y       # INSTALLED FROM SOURCE (APR)
@@ -41,6 +44,7 @@ function install_needed_packages {
     sudo apt install make -y
     sudo apt install libxml2-dev -y
     sudo apt install libsqlite3-dev -y
+    sudo apt install jq -y
     sudo apt install cmake -y
     sudo apt install build-essential -y
     sudo apt install libncurses5-dev -y
@@ -70,7 +74,6 @@ function install_apr {
     #sudo rm "${APR_SOURCE_DIRECTORY_NAME}"
     #sudo rm -r "${APR_SOURCE_DIRECTORY_NAME_WITHOUT_EXTENSION}"
 }
-
 
 # EXPAT IS NEEDED FOR APR-UTIL
 function install_expat {
@@ -115,12 +118,31 @@ function install_apr_util {
 }
 
 function install_apache {
-    APACHE_SOURCE_CODE_URL="https://dlcdn.apache.org/httpd/httpd-${APACHE_VERSION}.tar.bz2"
-    APACHE_SOURCE_DIRECTORY_NAME="${APACHE_SOURCE_CODE_URL##*/}"
-    APACHE_SOURCE_DIRECTORY_NAME_WITHOUT_EXTENSION=$(basename "$APACHE_SOURCE_DIRECTORY_NAME" .tar.bz2)
+    # APACHE_SOURCE_CODE_URL="https://dlcdn.apache.org/httpd/httpd-${APACHE_VERSION}.tar.bz2"
+    # APACHE_SOURCE_DIRECTORY_NAME="${APACHE_SOURCE_CODE_URL##*/}"
+    # APACHE_SOURCE_DIRECTORY_NAME_WITHOUT_EXTENSION=$(basename "$APACHE_SOURCE_DIRECTORY_NAME" .tar.bz2)
+    # APACHE_FILE_INSTALL_LOCATION="${PACKAGES_INSTALLATION_DIRECTORY}/apache-${APACHE_VERSION}"
+    APACHE_SOURCE_CODE_URL="https://dlcdn.apache.org/httpd/httpd-"
+    APACHE_SOURCE_CODE_FULL_URL="${APACHE_SOURCE_CODE_URL}${APACHE_VERSION}${TAR_BZ2_EXTENSION}"
+    APACHE_SOURCE_CODE_SHA256_SUM_URL="${APACHE_SOURCE_CODE_FULL_URL}${SHA256_EXTENSION}"
+    # TODO cia prideti kaip php fulll source of sha256
+    APACHE_SOURCE_DIRECTORY_NAME="${APACHE_SOURCE_CODE_FULL_URL##*/}"
+    APACHE_SOURCE_DIRECTORY_NAME_WITHOUT_EXTENSION=$(basename "$APACHE_SOURCE_DIRECTORY_NAME" ${TAR_BZ2_EXTENSION})
     APACHE_FILE_INSTALL_LOCATION="${PACKAGES_INSTALLATION_DIRECTORY}/apache-${APACHE_VERSION}"
     
-    wget -U "${USER_AGENT}" "$APACHE_SOURCE_CODE_URL"
+    wget -U "${USER_AGENT}" "$APACHE_SOURCE_CODE_FULL_URL"
+    
+    SHA256_SUM_OF_REMOTE_APACHE_FILES=$(curl -s -A "$USER_AGENT" "${APACHE_SOURCE_CODE_SHA256_SUM_URL}" | cut -f -1 -d " ")
+    SHA256_SUM_OF_LOCAL_APACHE_FILES=$(sha256sum "${APACHE_SOURCE_DIRECTORY_NAME}" | cut -f -1 -d " ")
+    
+    if [[ "${SHA256_SUM_OF_REMOTE_APACHE_FILES}" == "${SHA256_SUM_OF_LOCAL_APACHE_FILES}" ]]; then
+        echo "Checksum matches"
+    else
+        echo "Checksum does not match!"
+        echo "Remote file checksum: |${SHA256_SUM_OF_REMOTE_APACHE_FILES}|"
+        echo "Local file checksum:  |${SHA256_SUM_OF_LOCAL_APACHE_FILES}|"
+        exit 1
+    fi
     
     tar xvf "$APACHE_SOURCE_DIRECTORY_NAME"
     
@@ -130,25 +152,20 @@ function install_apache {
     sudo make install -j "$NUMBER_OF_PROCESSING_UNITS"
     echo "Starting apache service"
     sudo "${APACHE_FILE_INSTALL_LOCATION}"/bin/apachectl -k start
+    response=$(curl "http://localhost:80")
+    if [[ "$response" == "<html><body><h1>It works!</h1></body></html>" ]]; then
+        echo "Apache is running"
+    else
+        echo "Apache is not running"
+    fi
     echo "Stopping apache service"
     sudo "${APACHE_FILE_INSTALL_LOCATION}"/bin/apachectl -k stop
-    # response=$(curl "http://localhost:80")
-    # if [[ "$response" == "<html><body><h1>It works!</h1></body></html>" ]]; then
-    #     echo "Apache is running"
-    # else
-    #     echo "Apache is not running"
-    # fi
-    # sudo "$APACHE_FILE_INSTALL_LOCATION"/bin/apachectl stop
-    # cd ..
     
     sudo echo "<FilesMatch \.php$>" >> "${APACHE_FILE_INSTALL_LOCATION}/conf/httpd.conf"
     sudo echo "    SetHandler application/x-httpd-php" >> "${APACHE_FILE_INSTALL_LOCATION}/conf/httpd.conf"
     sudo echo "</FilesMatch>" >> "${APACHE_FILE_INSTALL_LOCATION}/conf/httpd.conf"
     
     sudo echo "echo \"<?php phpinfo();?>\"" > "${APACHE_FILE_INSTALL_LOCATION}/htdocs/index.php"
-    
-    #sudo "${APACHE_FILE_INSTALL_LOCATION}"/bin/apachectl -k restart
-    
     
     # sudo rm "${APACHE_SOURCE_DIRECTORY_NAME}"
     # sudo rm -r "${APACHE_SOURCE_DIRECTORY_NAME_WITHOUT_EXTENSION}"
@@ -170,18 +187,36 @@ function check_if_apache_is_running {
     else
         echo "Error configuring Apache with PHP!"
     fi
+    rm output.txt
+    rm cleaned_output.txt
 }
 
 function install_php {
-    PHP_SOURCE_CODE_URL="https://www.php.net/distributions/php-${PHP_VERSION}.tar.gz"
-    PHP_SOURCE_DIRECTORY_NAME="${PHP_SOURCE_CODE_URL##*/}"
-    PHP_SOURCE_DIRECTORY_NAME_WITHOUT_EXTENSION=$(basename "$PHP_SOURCE_DIRECTORY_NAME" .tar.gz)
+    PHP_SOURCE_CODE_URL="https://www.php.net"
+    PHP_SOURCE_CODE_FULL_URL="${PHP_SOURCE_CODE_URL}/distributions/php-${PHP_VERSION}${TAR_BZ2_EXTENSION}"
+    PHP_SOURCE_CODE_SHA256_SUM_URL="${PHP_SOURCE_CODE_URL}/releases/index.php?json&version=${PHP_VERSION}"
+    PHP_SOURCE_DIRECTORY_NAME="${PHP_SOURCE_CODE_FULL_URL##*/}"
+    PHP_SOURCE_DIRECTORY_NAME_WITHOUT_EXTENSION=$(basename "$PHP_SOURCE_DIRECTORY_NAME" ${TAR_BZ2_EXTENSION})
     PHP_FILE_INSTALL_LOCATION="${PACKAGES_INSTALLATION_DIRECTORY}/php-${PHP_VERSION}"
-    
-    wget -U "${USER_AGENT}" "$PHP_SOURCE_CODE_URL"
-    
+    echo "before wget"
+    wget -U "${USER_AGENT}" "$PHP_SOURCE_CODE_FULL_URL"
+    echo "After wget"
+    curl -s -A "$USER_AGENT" "${PHP_SOURCE_CODE_SHA256_SUM_URL}" > "file.json"
+    SHA256_SUM_OF_REMOTE_PHP_FILES=$(jq -r --arg PHP_VERSION "$PHP_VERSION" --arg TAR_BZ2_EXTENSION "$TAR_BZ2_EXTENSION" '.source[] | select(.filename == "php-\($PHP_VERSION)\($TAR_BZ2_EXTENSION)") | .sha256' file.json)
+    #SHA256_SUM_OF_REMOTE_PHP_FILES=$(jq -r --arg PHP_VERSION "$PHP_VERSION" --arg TAR_BZ2_EXTENSION "$TAR_BZ2_EXTENSION" '.source[] | select(.filename == "php-[$PHP_VERSION][$TAR_BZ2_EXTENSION]") | .sha256' file.json)
+    rm "file.json"
+    SHA256_SUM_OF_LOCAL_PHP_FILES=$(sha256sum "${PHP_SOURCE_DIRECTORY_NAME}" | cut -f -1 -d " ")
+    if [[ "${SHA256_SUM_OF_REMOTE_PHP_FILES}" == "${SHA256_SUM_OF_LOCAL_PHP_FILES}" ]]; then
+        echo "Checksum matches"
+    else
+        echo "Checksum does not match!"
+        echo "Remote file checksum: |${SHA256_SUM_OF_REMOTE_PHP_FILES}|"
+        echo "Local file checksum:  |${SHA256_SUM_OF_LOCAL_PHP_FILES}|"
+        exit 1
+    fi
+    echo "before tar"
     tar xvf "$PHP_SOURCE_DIRECTORY_NAME"
-    
+    echo "After tar"
     cd "./$PHP_SOURCE_DIRECTORY_NAME_WITHOUT_EXTENSION" || exit
     
     sudo ./configure --prefix="$PHP_FILE_INSTALL_LOCATION" --with-apxs2="${APACHE_FILE_INSTALL_LOCATION}"/bin/apxs
@@ -206,12 +241,32 @@ function check_if_php_is_installed {
 }
 
 function install_mariadb {
-    MARIADB_SOURCE_CODE_URL="https://mariadb.mirror.serveriai.lt/mariadb-${MARIADB_VERSION}/source/mariadb-${MARIADB_VERSION}.tar.gz"
-    MARIADB_SOURCE_DIRECTORY_NAME="${MARIADB_SOURCE_CODE_URL##*/}"
+    # MARIADB_SOURCE_CODE_URL="https://mariadb.mirror.serveriai.lt/mariadb-${MARIADB_VERSION}/source/mariadb-${MARIADB_VERSION}.tar.gz"
+    # MARIADB_SOURCE_DIRECTORY_NAME="${MARIADB_SOURCE_CODE_URL##*/}"
+    # MARIADB_SOURCE_DIRECTORY_NAME_WITHOUT_EXTENSION=$(basename "$MARIADB_SOURCE_DIRECTORY_NAME" .tar.gz)
+    # MARIADB_FILE_INSTALL_LOCATION="${PACKAGES_INSTALLATION_DIRECTORY}/mariadb-${MARIADB_VERSION}"
+    
+    # wget -U "${USER_AGENT}" "$MARIADB_SOURCE_CODE_URL"
+    
+    MARIADB_SOURCE_CODE_URL="https://downloads.mariadb.org/rest-api/mariadb"
+    MARIADB_SOURCE_CODE_FULL_URL="${MARIADB_SOURCE_CODE_URL}/${MARIADB_VERSION}/mariadb-${MARIADB_VERSION}${TAR_GZ_EXTENSION}"
+    MARIADB_SOURCE_CODE_SHA256_SUM_URL="${MARIADB_SOURCE_CODE_FULL_URL}/checksum"
+    MARIADB_SOURCE_DIRECTORY_NAME="${MARIADB_SOURCE_CODE_FULL_URL##*/}"
     MARIADB_SOURCE_DIRECTORY_NAME_WITHOUT_EXTENSION=$(basename "$MARIADB_SOURCE_DIRECTORY_NAME" .tar.gz)
     MARIADB_FILE_INSTALL_LOCATION="${PACKAGES_INSTALLATION_DIRECTORY}/mariadb-${MARIADB_VERSION}"
     
-    wget -U "${USER_AGENT}" "$MARIADB_SOURCE_CODE_URL"
+    wget -U "${USER_AGENT}" "$MARIADB_SOURCE_CODE_FULL_URL"
+    
+    SHA256_SUM_OF_REMOTE_MARIADB_FILES=$(curl -s -A "$USER_AGENT" "$MARIADB_SOURCE_CODE_SHA256_SUM_URL" | jq -r '.response.checksum.sha256sum')
+    SHA256_SUM_OF_LOCAL_MARIADB_FILES=$(sha256sum "${MARIADB_SOURCE_DIRECTORY_NAME}" | cut -f -1 -d " ")
+    if [[ "${SHA256_SUM_OF_REMOTE_MARIADB_FILES}" == "${SHA256_SUM_OF_LOCAL_MARIADB_FILES}" ]]; then
+        echo "Checksum matches"
+    else
+        echo "Checksum does not match!"
+        echo "Remote file checksum: |${SHA256_SUM_OF_REMOTE_MARIADB_FILES}|"
+        echo "Local file checksum:  |${SHA256_SUM_OF_LOCAL_MARIADB_FILES}|"
+        exit 1
+    fi
     
     tar xvf "$MARIADB_SOURCE_DIRECTORY_NAME"
     
@@ -249,6 +304,7 @@ function check_if_mariadb_is_installed {
 }
 
 function delete_source_code_files {
+    echo "Cleaning up source code directories"
     sudo rm "${APR_SOURCE_DIRECTORY_NAME}"
     sudo rm -r "${APR_SOURCE_DIRECTORY_NAME_WITHOUT_EXTENSION}"
     
@@ -266,6 +322,7 @@ function delete_source_code_files {
     
     sudo rm "${MARIADB_SOURCE_DIRECTORY_NAME}"
     sudo rm -r "${MARIADB_SOURCE_DIRECTORY_NAME_WITHOUT_EXTENSION}"
+    echo "Cleaned up"
 }
 
 # Install needed packages
@@ -276,11 +333,13 @@ install_expat
 install_apr_util
 install_apache
 install_php
-#install_mariadb
+install_mariadb
 
 check_if_apache_is_running
 check_if_php_is_installed
-#check_if_mariadb_is_installed
+check_if_mariadb_is_installed
+
+#delete_source_code_files
 
 end=$(date +%s)
 runtime=$((end-start))
